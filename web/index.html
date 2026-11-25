@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>命运2图鉴 · 装备与传说书馆</title>
+  <link rel="icon" type="image/svg+xml" href="./icon.svg" />
+  <link rel="manifest" href="./manifest.json" />
+  <meta name="theme-color" content="#0e1116" />
+  <link rel="stylesheet" href="./style.css" />
+</head>
+<body>
+  <div id="app" class="app-shell">
+    <!-- 顶部全局导航栏 -->
+    <header class="topbar">
+      <div class="topbar-left">
+        <div class="brand" id="brandHome" title="命运2图鉴 · 装备与传说书馆">
+          <img class="brand-icon" src="./icon.svg" width="28" height="28" alt="" />
+          <div class="brand-text">
+            <span class="brand-title">DESTINY 2</span>
+            <span class="brand-sub">图鉴与传说档案</span>
+          </div>
+        </div>
+
+        <nav class="mode-tabs" aria-label="主视图切换">
+          <button type="button" class="mode-tab active" data-mode="codex">
+            <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path fill="currentColor" d="M4 4h7v7H4V4zm9 0h7v7h-7V4zM4 13h7v7H4v-7zm9 0h7v7h-7v-7z"/></svg>
+            <span data-label-en="Gear">装备图鉴</span>
+          </button>
+          <button type="button" class="mode-tab" data-mode="lore">
+            <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path fill="currentColor" d="M6 2h12a2 2 0 0 1 2 2v16a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2zm1 4v12h10V6H7zm2 2h6v2H9V8zm0 4h6v2H9v-2z"/></svg>
+            <span data-label-en="Lore Books">传说书馆</span>
+          </button>
+          <button type="button" class="mode-tab" data-mode="favorites">
+            <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path fill="currentColor" d="M12 2l2.9 6.26L22 9.27l-5 4.87 1.18 6.86L12 17.77l-6.18 3.23L7 14.14 2 9.27l7.1-1.01L12 2z"/></svg>
+            <span data-label-en="Favorites">我的收藏</span>
+          </button>
+        </nav>
+      </div>
+
+      <div class="topbar-center">
+        <div class="search-box">
+          <svg class="search-icon" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">
+            <path fill="currentColor" d="M15.5 14h-.79l-.28-.27A6.47 6.47 0 0 0 16 9.5 6.5 6.5 0 1 0 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 5 1.5-1.5-5-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/>
+          </svg>
+          <input id="globalSearchInput" type="text" placeholder="搜索装备、简介或传说书…" autocomplete="off" maxlength="160" />
+          <span id="searchHitCount" class="search-hit-count hidden"></span>
+          <button id="clearSearchBtn" type="button" class="search-clear hidden" title="清除搜索" aria-label="清除搜索">
+            <svg viewBox="0 0 24 24" width="14" height="14"><path fill="currentColor" d="M18.3 5.7L12 12l6.3 6.3-1.4 1.4L10.6 13.4 4.3 19.7 2.9 18.3 9.2 12 2.9 5.7 4.3 4.3 10.6 10.6 16.9 4.3z"/></svg>
+          </button>
+        </div>
+      </div>
+
+      <div class="topbar-right">
+        <div class="lang-switch" role="group" aria-label="语言显示切换">
+          <button type="button" class="lang-btn active" data-lang="zh">简中</button>
+          <button type="button" class="lang-btn" data-lang="en">EN</button>
+          <button type="button" class="lang-btn" data-lang="both">双语</button>
+        </div>
+
+        <span id="manifestBadge" class="manifest-badge" title="Manifest 版本">读取 Manifest…</span>
+
+        <label class="checkbox-pill fulltext-toggle">
+          <input id="fulltextToggle" type="checkbox" />
+          <span id="fulltextLabel">搜传说正文</span>
+        </label>
+      </div>
+    </header>
+
+    <div id="dataStatus" class="empty-state" role="status">正在读取图鉴数据…</div>
+
+    <!-- 主工作区 -->
+    <main id="mainWorkspace" class="main-workspace hidden">
+      <!-- 视图 1：装备图鉴 -->
+      <section id="codexView" class="view-section active">
+        <div class="filter-bar">
+          <div id="categoryTabs" class="filter-group category-tabs"></div>
+
+          <div class="filter-row">
+            <div id="tierPills" class="filter-group tier-pills"></div>
+            <label class="checkbox-pill">
+              <input id="hasLoreCheckbox" type="checkbox" />
+              <span data-label-en="Has Lore">仅看带传说</span>
+            </label>
+          </div>
+
+          <!-- 武器动态子筛选 -->
+          <div id="weaponSubFilters" class="sub-filter-row hidden">
+            <div id="weaponSlotPills" class="filter-group"></div>
+            <select id="weaponTypeSelect" class="d2-select" aria-label="武器种类">
+              <option value="">全部武器种类</option>
+            </select>
+            <select id="ammoTypeSelect" class="d2-select" aria-label="弹药类型">
+              <option value="">全部弹药</option>
+              <option value="1">主弹药</option>
+              <option value="2">特殊弹药</option>
+              <option value="3">重型弹药</option>
+            </select>
+            <div id="damageTypePills" class="filter-group"></div>
+          </div>
+
+          <!-- 护甲动态子筛选 -->
+          <div id="armorSubFilters" class="sub-filter-row hidden">
+            <div id="armorClassPills" class="filter-group"></div>
+            <div id="armorSlotPills" class="filter-group"></div>
+          </div>
+        </div>
+
+        <div class="codex-layout">
+          <div class="codex-main">
+            <div class="results-toolbar">
+              <span id="itemsTotalText" class="results-count">共 0 件装备</span>
+              <div id="paginationTop" class="pagination"></div>
+            </div>
+
+            <div id="itemsGrid" class="items-grid"></div>
+            <div id="itemsEmpty" class="empty-state hidden" data-label-en="No matching gear">没有找到符合条件的装备</div>
+
+            <div class="results-toolbar bottom">
+              <span></span>
+              <div id="paginationBottom" class="pagination"></div>
+            </div>
+          </div>
+
+          <!-- 右侧详情阅读器 -->
+          <aside id="itemDetailDrawer" class="detail-drawer hidden" aria-label="装备详情">
+            <div class="detail-header">
+              <div class="detail-header-top">
+                <div id="detailTierBadge" class="detail-tier-badge"></div>
+                <div class="detail-actions">
+                  <button id="detailFavBtn" type="button" class="icon-action-btn" title="收藏">
+                    <svg viewBox="0 0 24 24" width="16" height="16"><path fill="currentColor" d="M12 2l2.9 6.26L22 9.27l-5 4.87 1.18 6.86L12 17.77l-6.18 3.23L7 14.14 2 9.27l7.1-1.01L12 2z"/></svg>
+                    <span>收藏</span>
+                  </button>
+                  <button id="detailReadBtn" type="button" class="icon-action-btn" title="标记已读">
+                    <svg viewBox="0 0 24 24" width="16" height="16"><path fill="currentColor" d="M9 16.2L4.8 12l-1.4 1.4L9 19 21 7l-1.4-1.4L9 16.2z"/></svg>
+                    <span>已读</span>
+                  </button>
+                  <button id="detailCopyMdBtn" type="button" class="icon-action-btn" title="复制 Markdown">
+                    <svg viewBox="0 0 24 24" width="16" height="16"><path fill="currentColor" d="M16 1H4a2 2 0 0 0-2 2v14h2V3h12V1zm3 4H8a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h11a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2zm0 16H8V7h11v14z"/></svg>
+                    <span>复制 MD</span>
+                  </button>
+                  <button id="detailDownloadMdBtn" type="button" class="icon-action-btn" title="下载 .md">
+                    <svg viewBox="0 0 24 24" width="16" height="16"><path fill="currentColor" d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg>
+                    <span>.md</span>
+                  </button>
+                  <button id="closeDetailBtn" type="button" class="close-drawer-btn" title="关闭详情">×</button>
+                </div>
+              </div>
+              <div class="detail-identity">
+                <div id="detailIconContainer" class="detail-icon-wrap" title="点击查看图标大图"></div>
+                <div class="detail-titles">
+                  <h2 id="detailNamePrimary"></h2>
+                  <div id="detailNameSecondary" class="detail-name-sec"></div>
+                  <div id="detailMetaLine" class="detail-meta-line"></div>
+                </div>
+              </div>
+            </div>
+
+            <div class="detail-body">
+              <div id="detailScreenshotWrap" class="detail-screenshot-wrap hidden">
+                <div id="detailScreenshotLoading" class="screenshot-loading">正在加载高清大图…</div>
+                <img id="detailScreenshotImg" class="detail-screenshot-img hidden" alt="装备高清展示" title="点击查看大图" />
+                <button id="detailScreenshotZoomBtn" type="button" class="screenshot-zoom-hint hidden" title="点击查看大图" aria-label="查看大图">
+                  <svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true"><path fill="currentColor" d="M15.5 14h-.79l-.28-.27A6.47 6.47 0 0 0 16 9.5 6.5 6.5 0 1 0 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 5 1.5-1.5-5-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14zm.5-7H9v2H7v1h2v2h1v-2h2V9h-2V7z"/></svg>
+                  <span>查看大图</span>
+                </button>
+              </div>
+
+              <div id="detailVariantsWrap" class="detail-block hidden">
+                <div class="block-label">历代复刻版本 (<span id="detailVariantCount">0</span>)</div>
+                <div id="detailVariantsList" class="variants-list"></div>
+              </div>
+
+              <div id="detailSourceWrap" class="detail-block hidden">
+                <div class="block-label">获取来源</div>
+                <p id="detailSourceText" class="detail-source"></p>
+              </div>
+
+              <div id="detailFlavorWrap" class="detail-block hidden">
+                <blockquote id="detailFlavorText" class="detail-flavor"></blockquote>
+              </div>
+
+              <div id="detailLoreWrap" class="detail-block lore-block hidden">
+                <div class="block-label">装备传说</div>
+                <h3 id="detailLoreTitle" class="lore-title"></h3>
+                <div id="detailLoreSubtitle" class="lore-subtitle"></div>
+                <div id="detailLoreContent" class="lore-content"></div>
+              </div>
+            </div>
+          </aside>
+        </div>
+      </section>
+
+      <!-- 视图 2：传说书馆（三栏经典布局） -->
+      <section id="loreView" class="view-section hidden">
+        <div class="lore-three-col">
+          <!-- 左栏：传说书目录 -->
+          <aside class="lore-col lore-books-col">
+            <div class="lore-col-header">
+              <h3>传说书架</h3>
+              <div class="lore-filters">
+                <label class="checkbox-pill small">
+                  <input id="loreFavOnlyCheckbox" type="checkbox" />
+                  <span data-label-en="Favorites Only">仅看收藏</span>
+                </label>
+                <label class="checkbox-pill small">
+                  <input id="loreUnreadOnlyCheckbox" type="checkbox" />
+                  <span data-label-en="Unread Only">仅看未读</span>
+                </label>
+              </div>
+            </div>
+            <div id="loreSectionsList" class="lore-sections-list"></div>
+          </aside>
+
+          <!-- 中栏：章节列表 -->
+          <section class="lore-col lore-chapters-col">
+            <div id="loreBookHeader" class="lore-book-header empty">
+              <p class="muted-tip">请从左侧选择一本传说书</p>
+            </div>
+            <div id="loreChaptersList" class="lore-chapters-list"></div>
+          </section>
+
+          <!-- 右栏：沉浸式正文阅读器 -->
+          <article class="lore-col lore-reader-col">
+            <div id="loreReaderEmpty" class="empty-state" data-label-en="Select a chapter to read">选择章节开始阅读传说</div>
+            <div id="loreReaderPanel" class="lore-reader-panel hidden">
+              <div class="lore-reader-toolbar">
+                <div class="chapter-nav">
+                  <button id="prevChapterBtn" type="button" class="mini-btn">‹ 上一章</button>
+                  <span id="chapterIndexBadge" class="chapter-index-badge"></span>
+                  <button id="nextChapterBtn" type="button" class="mini-btn">下一章 ›</button>
+                </div>
+                <div class="reader-actions">
+                  <button id="chapterFavBtn" type="button" class="icon-action-btn">
+                    <svg viewBox="0 0 24 24" width="15" height="15"><path fill="currentColor" d="M12 2l2.9 6.26L22 9.27l-5 4.87 1.18 6.86L12 17.77l-6.18 3.23L7 14.14 2 9.27l7.1-1.01L12 2z"/></svg>
+                    <span>收藏章</span>
+                  </button>
+                  <button id="chapterReadBtn" type="button" class="icon-action-btn">
+                    <svg viewBox="0 0 24 24" width="15" height="15"><path fill="currentColor" d="M9 16.2L4.8 12l-1.4 1.4L9 19 21 7l-1.4-1.4L9 16.2z"/></svg>
+                    <span>标记已读</span>
+                  </button>
+                  <button id="chapterCopyMdBtn" type="button" class="icon-action-btn" data-label-en="Copy Chapter Markdown">复制章节 MD</button>
+                  <button id="chapterDownloadMdBtn" type="button" class="icon-action-btn" data-label-en="Download Chapter">下载章 .md</button>
+                </div>
+              </div>
+              <div class="lore-reader-scroll">
+                <h2 id="readerChapterTitle" class="reader-title"></h2>
+                <div id="readerChapterSubtitle" class="reader-subtitle"></div>
+                <div id="readerChapterBody" class="lore-content"></div>
+              </div>
+            </div>
+          </article>
+        </div>
+      </section>
+
+      <!-- 视图 3：我的收藏 -->
+      <section id="favoritesView" class="view-section hidden">
+        <div class="favorites-header">
+          <div class="filter-group">
+            <button type="button" class="pill-btn active" data-fav-tab="all" data-label-en="All Favorites">全部收藏</button>
+            <button type="button" class="pill-btn" data-fav-tab="items" data-label-en="Gear">收藏装备</button>
+            <button type="button" class="pill-btn" data-fav-tab="books" data-label-en="Lore Books">收藏传说书</button>
+            <button type="button" class="pill-btn" data-fav-tab="chapters" data-label-en="Chapters">收藏章节</button>
+          </div>
+          <div class="filter-group">
+            <button id="exportBackup" class="pill-btn" type="button">导出备份</button>
+            <button id="importBackup" class="pill-btn" type="button">导入备份</button>
+            <input id="backupFile" type="file" accept=".json,application/json" hidden />
+          </div>
+          <span id="favoritesCountText" class="results-count"></span>
+        </div>
+
+        <div id="favoritesEmpty" class="empty-state hidden" data-label-en="No matching favorites">没有符合条件的收藏</div>
+
+        <div id="favItemsSection" class="fav-section">
+          <h3 class="fav-section-title" data-label-en="Favorite Gear">收藏的装备</h3>
+          <div id="favItemsGrid" class="items-grid"></div>
+          <div id="favItemsEmpty" class="empty-state hidden" data-label-en="No favorite gear">暂无收藏的装备</div>
+        </div>
+
+        <div id="favBooksSection" class="fav-section">
+          <h3 class="fav-section-title" data-label-en="Favorite Lore Books">收藏的传说书</h3>
+          <div id="favBooksGrid" class="fav-books-grid"></div>
+          <div id="favBooksEmpty" class="empty-state hidden" data-label-en="No favorite lore books">暂无收藏的传说书</div>
+        </div>
+
+        <div id="favChaptersSection" class="fav-section">
+          <h3 class="fav-section-title" data-label-en="Favorited Chapters">已收藏章节</h3>
+          <div id="favChaptersGrid" class="fav-books-grid"></div>
+          <div id="favChaptersEmpty" class="empty-state hidden" data-label-en="No favorite chapters">暂无收藏的章节</div>
+        </div>
+      </section>
+    </main>
+
+    <!-- 全屏大图查看器 -->
+    <div id="imageLightbox" class="lightbox hidden" role="dialog" aria-modal="true" aria-label="查看大图">
+      <div class="lightbox-toolbar">
+        <div class="lightbox-meta">
+          <span id="lightboxCaption" class="lightbox-caption"></span>
+          <span id="lightboxResolution" class="lightbox-resolution hidden"></span>
+        </div>
+        <div class="lightbox-controls">
+          <button id="lightboxZoomOutBtn" type="button" class="lightbox-btn" title="缩小 (-)" aria-label="缩小">−</button>
+          <span id="lightboxZoomPct" class="lightbox-zoom-pct">100%</span>
+          <button id="lightboxZoomInBtn" type="button" class="lightbox-btn" title="放大 (+)" aria-label="放大">+</button>
+          <button id="lightboxFitBtn" type="button" class="lightbox-btn text" title="适应窗口 (0)">适应</button>
+          <button id="lightboxActualBtn" type="button" class="lightbox-btn text" title="原始尺寸 (1)">1:1</button>
+          <button id="lightboxCloseBtn" type="button" class="lightbox-btn close" title="关闭 (Esc)" aria-label="关闭">×</button>
+        </div>
+      </div>
+      <div id="lightboxStage" class="lightbox-stage">
+        <img id="lightboxImg" class="lightbox-img" alt="" draggable="false" />
+      </div>
+      <div class="lightbox-hint">滚轮缩放 · 左键拖动平移 · 双击切换缩放 · Esc 或点击空白处关闭</div>
+    </div>
+
+    <!-- Toast 提示 -->
+    <div id="toastContainer" class="toast-container" aria-live="polite"></div>
+  </div>
+
+  <script src="./app.js"></script>
+</body>
+</html>
